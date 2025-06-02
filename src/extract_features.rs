@@ -87,7 +87,62 @@ pub fn convex_area(points: &[(i32, i32)]) -> f64 {
         }
     }
 
-    0.5 * area.abs()
+    0.05 * 0.5 * area.abs()
+}
+
+fn distance_sq(p1: (i32, i32), p2: (i32, i32)) -> i64 {
+    let dx = (p1.0 as i64) - (p2.0 as i64);
+    let dy = (p1.1 as i64) - (p2.1 as i64);
+    dx * dx + dy * dy
+}
+
+pub fn calculate_centroids(points: &Vec<Vec<(i32, i32)>>) -> Vec<(i32, i32)> {
+    let mut centroids = Vec::new();
+
+    for cell in points {
+        let mut centroid = (0, 0);
+        for point in cell {
+            centroid.0 += point.0;
+            centroid.1 += point.1;
+        }
+
+        centroid.0 /= cell.len() as i32;
+        centroid.1 /= cell.len() as i32;
+        centroids.push(centroid);
+    }
+
+    centroids
+}
+
+pub fn voronoi_areas(centroids: &[(i32, i32)], width: usize, height: usize) -> Vec<f64> {
+    if centroids.is_empty() {
+        return Vec::new();
+    }
+
+    let num_centroids = centroids.len();
+    let mut areas: Vec<f64> = vec![0.0; num_centroids];
+
+    for y_pixel in 0..height {
+        for x_pixel in 0..width {
+            let current_pixel = (x_pixel as i32, y_pixel as i32);
+            let mut min_dist_sq = i64::MAX;
+            let mut closest_centroid_index = 0; // Default to first, will be updated
+
+            // Find the closest centroid to the current_pixel
+            for (idx, centroid_coords) in centroids.iter().enumerate() {
+                let dist_sq = distance_sq(current_pixel, *centroid_coords);
+                if dist_sq < min_dist_sq {
+                    min_dist_sq = dist_sq;
+                    closest_centroid_index = idx;
+                }
+                // If dist_sq == min_dist_sq, the current logic implicitly favors
+                // the centroid with the lower index. This is a common tie-breaking rule.
+            }
+            // Assign the pixel to the closest centroid
+            areas[closest_centroid_index] += 0.1;
+        }
+    }
+    areas
 }
 
 pub fn convex_perimeter(points: &[(i32, i32)]) -> f64 {

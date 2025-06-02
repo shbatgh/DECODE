@@ -57,11 +57,11 @@ pub fn initialize_centroids(n: usize, img: &Image) -> Vec<(usize, usize)> {
     centroids
 }
 
-pub fn get_labels(img: &Image, centroids: &[(usize, usize)]) -> (Vec<Vec<usize>>, Vec<Vec<(usize, usize)>>) {
-    let mut labels = vec![vec![0; img.x]; img.y];
+pub fn get_labels(img: &Vec<Vec<f64>>, centroids: &[(usize, usize)]) -> (Vec<Vec<usize>>, Vec<Vec<(usize, usize)>>) {
+    let mut labels = vec![vec![0; img[0].len()]; img.len()];
     let mut by_label: Vec<Vec<(usize, usize)>> = vec![Vec::new(); centroids.len()];
 
-    for (y, row) in img.img.iter().enumerate() {
+    for (y, row) in img.iter().enumerate() {
         for (x, pixel) in row.iter().enumerate() {
             let mut min_dist = usize::MAX;
             let mut label = 0;
