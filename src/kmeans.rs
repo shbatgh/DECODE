@@ -42,16 +42,27 @@ pub fn load_image_as_matrix(path: &str) -> Vec<Vec<Point>> {
     matrix
 }
 
-pub fn random_point(img: &Image) -> (usize, usize) {
-    let mut rng = rand::rng();
-    (rng.random_range(0..img.x), rng.random_range(0..img.x))
+
+fn euclidean_distance(p: &Vec<f64>, q: &Vec<f64>) -> f64 {
+    p.iter()
+        .zip(q.iter())
+        .map(|(a, b)| (a - b).powi(2))
+        .sum::<f64>()
+        .sqrt()
 }
 
-pub fn initialize_centroids(n: usize, img: &Image) -> Vec<(usize, usize)> {
+pub fn random_point(v: &Vec<Vec<f64>>) -> (usize, usize) {
+    let mut rng = rand::thread_rng();
+    let y = rng.gen_range(0..v.len());
+    let x = rng.gen_range(0..v[0].len());
+    (x, y)
+}
+
+pub fn initialize_centroids(v: &Vec<Vec<f64>>) -> Vec<(usize, usize)> {
     let mut centroids = Vec::new();
 
-    for _ in 0..n {
-        centroids.push(random_point(img));
+    for i in 0..v.len() {
+        centroids.push(random_point(v));
     }
 
     centroids
@@ -97,17 +108,17 @@ impl Image {
 
 pub fn get_centroids(labels: &Vec<Vec<(usize, usize)>>) -> Vec<(usize, usize)> {
     let mut centroids: Vec<(usize, usize)> = Vec::new();
-    
+
     for row in labels.iter() {
         let mut centroid: (usize, usize)  = (0, 0);
 
         for point in row.iter() {
             centroid.0 += point.0;
             centroid.1 += point.1;
-        }
+            }
 
-        centroid.0 /= row.len();
-        centroid.1 /= row.len();
+        centroid.0 /= if row.len() != 0 {row.len()} else {1};
+        centroid.1 /= if row.len() != 0 {row.len()} else {1};
         centroids.push(centroid);
     }
 

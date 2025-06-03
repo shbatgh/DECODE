@@ -1,20 +1,40 @@
+use kmeans::initialize_centroids;
+
 mod extract_features;
 mod kmeans;
 
 const MAX_ITERATIONS: i32 = 1000;
 
 fn normalize_features(features: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
-    features
-        .iter()
-        .map(|feature| {
-            let min = feature.iter().cloned().fold(f64::INFINITY, f64::min);
-            let max = feature.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
-            if (max - min).abs() < std::f64::EPSILON {
-                // Avoid division by zero if all values are the same
-                vec![0.0; feature.len()]
-            } else {
-                feature.iter().map(|v| (v - min) / (max - min)).collect()
-            }
+    if features.is_empty() || features[0].is_empty() {
+        return vec![];
+    }
+    let num_samples = features.len();
+    let num_features = features[0].len();
+
+    // Compute min and max for each feature (column)
+    let mut mins = vec![f64::INFINITY; num_features];
+    let mut maxs = vec![f64::NEG_INFINITY; num_features];
+
+    for row in features {
+        for (j, &val) in row.iter().enumerate() {
+            if val < mins[j] { mins[j] = val; }
+            if val > maxs[j] { maxs[j] = val; }
+        }
+    }
+
+    // Normalize each value
+    features.iter()
+        .map(|row| {
+            row.iter().enumerate().map(|(j, &val)| {
+                let min = mins[j];
+                let max = maxs[j];
+                if (max - min).abs() < std::f64::EPSILON {
+                    0.0
+                } else {
+                    (val - min) / (max - min)
+                }
+            }).collect()
         })
         .collect()
 }
@@ -53,11 +73,12 @@ fn main() {
     let channel_mean_blue: Vec<f64> = channel_means.iter().map(|c| c.2 as f64).collect();
     let voronoi_f64: Vec<f64> = voronoi.iter().map(|a| *a as f64).collect();
     let features: Vec<Vec<f64>> = vec![centroid_x, centroid_y, areas, channel_mean_red, channel_mean_green, channel_mean_blue, voronoi_f64];
+    let features = (0..features[0].len()).map(|i| features.iter().map(|feature| feature[i]).collect()).collect();
     let features = normalize_features(&features);
 
     let mut iterations = 0;
     let k = 10;
-    let mut centroids = centroids.iter().map(|x| (x.0 as usize, x.1 as usize)).collect();
+    let mut centroids = kmeans::initialize_centroids(&features);
     let mut old_centroids: Vec<(usize, usize)> = Vec::new();
     let mut final_labels_matrix: Vec<Vec<usize>> = vec![vec![0; features[0].len()]; features.len()];
     while !kmeans::should_stop(&old_centroids, &centroids, iterations) {
